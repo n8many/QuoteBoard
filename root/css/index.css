@@ -1,0 +1,17 @@
+/* Keith Rausch */
+
+body {
+    background-color: black;
+    color: white;
+    padding-bottom: 200px;
+}
+
+input, textarea {
+    background-color: #181818;
+    color: white;
+}
+
+.textarea-disabled{
+    background-color:#363635 !important;
+    color: white;
+}
