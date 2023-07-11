@@ -32,7 +32,7 @@ def update_birthdays(spreadsheet_id: str, sheet_name: str, target_file: Optional
 
 if __name__ == "__main__":
     from config import quote_source, quote_sheet, quote_file, enable_birthday_quotes, birthday_sheet, birthday_file
-    quotes = update_quotes(quote_source, quote_sheet, quote_sheet)
+    quotes = update_quotes(quote_source, quote_sheet, quote_file)
     print(quotes)
 
     if enable_birthday_quotes:
