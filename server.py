@@ -1,7 +1,7 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import cgi, json
 import os.path
-
+import shutil
 
 class Handler(BaseHTTPRequestHandler):
     def __init__(self, *args, root_dir='root', default_index="index.html", **kwargs):
@@ -62,6 +62,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    if not os.path.isfile('config.py'):  # Need to create config file if it doesn't exist
+        shutil.copy("config-example.py", "config.py")
     server = HTTPServer(('', 8080), Handler) # access with http://localhost:8080
     # server.serve_forever()
     while True:
