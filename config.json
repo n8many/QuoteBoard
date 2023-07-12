@@ -1,0 +1,9 @@
+{
+    "cache_quote_file": "quotes.csv",
+    "cache_birthday_file": "birthdays.csv",
+    "enable_birthday_quotes": true,
+    "database_query_period_m": 10,
+    "quote_change_period_m": 0.1,
+    "antirepeat_depth": 20,
+    "sfw": true
+}

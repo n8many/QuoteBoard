@@ -10,10 +10,10 @@ def get_spreadsheet(spreadsheet_id: str, sheet_name: str) -> pd.DataFrame():
     worksheet = spreadsheet.worksheet(sheet_name)
     # TODO may need some sanitization of stray data
     rows = worksheet.get_all_records()
-    data = pd.DataFrame(rows)
+    data = pd.DataFrame(rows).fillna('')
     return data
 
-def update_quotes(spreadsheet_id: str, sheet_name: str, target_file: Optional[str]) -> pd.DataFrame():
+def update_quotes(spreadsheet_id: str, sheet_name: str, target_file: Optional[str] = None) -> pd.DataFrame():
     data = get_spreadsheet(spreadsheet_id, sheet_name)
     # TODO check and enforce column format
     data.set_index(pd.util.hash_pandas_object(data), drop=False, inplace=True)
@@ -21,7 +21,7 @@ def update_quotes(spreadsheet_id: str, sheet_name: str, target_file: Optional[st
         data.to_csv(target_file)
     return data
 
-def update_birthdays(spreadsheet_id: str, sheet_name: str, target_file: Optional[str]) -> pd.DataFrame():
+def update_birthdays(spreadsheet_id: str, sheet_name: str, target_file: Optional[str] = None) -> pd.DataFrame():
     data = get_spreadsheet(spreadsheet_id, sheet_name)
     # TODO check and enforce column format
     # TODO make birthday column actual date objects

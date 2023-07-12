@@ -1,17 +1,33 @@
 /* Keith Rausch */
 
 body {
-    background-color: black;
-    color: white;
-    padding-bottom: 200px;
-}
-
-input, textarea {
-    background-color: #181818;
+    background-color: #080808;
     color: white;
 }
 
-.textarea-disabled{
-    background-color:#363635 !important;
+#quote_body {
     color: white;
+    font-size: 40px;
+  }
+
+#quote_author {
+      color: red;
+      font-size: 20px;
+      text-align: right;
 }
+
+#connection_loss_msg {
+    color: red;
+    font-size: 40px;
+}
+
+/* quotes stuff */
+q {
+    quotes: "“" "”" "‘" "’";
+  }
+  q::before {
+      content: open-quote;
+  }
+  q::after {
+      content: close-quote;
+  }
