@@ -30,13 +30,60 @@ def get_current_quote():
 
     return chosen_quote
 
-def change_quote():
+
+def change_current_quote():
     global CURRENT_QUOTE_INDEX
     CURRENT_QUOTE_INDEX = CURRENT_QUOTE_INDEX+1
 
 
 def dict_keys_to_lowercase(d):
     return {k.lower(): v for k, v in d.items()}
+
+
+# fetch the new quotes file and save it if it is different than what we already have in memory
+def maintain_database(source, sheet, cache_file, existing_db=None, cleaning_func=None):
+    new_db_raw = quote_db.get_spreadsheet(source, sheet)
+    new_db = cleaning_func(new_db_raw) if cleaning_func else new_db_raw
+    if (existing_db is None) or (not existing_db.equals(new_db)):
+        new_db_raw.to_csv(cache_file, index=False) # we always save the raw, and no index
+        print("database changed. saving to {}".format(cache_file))
+    return new_db
+
+
+def maintain_all_databases(database_access):
+    global CONFIG
+    global QUOTES
+    global BIRTHDAYS
+
+    # fetch the new quotes file and save it if it is different than what we already have in memory
+    QUOTES = maintain_database(database_access['quote_source'], database_access['quote_sheet'], CONFIG['cache_quote_file'], existing_db=QUOTES, cleaning_func=quote_db.clean_quotes)
+
+    if CONFIG['enable_birthday_quotes']:
+        # fetch the new birthdays file and save it if it is different than what we already have in memory
+        BIRTHDAYS = maintain_database(database_access['quote_source'], database_access['birthday_sheet'], CONFIG['cache_birthday_file'], existing_db=BIRTHDAYS, cleaning_func=quote_db.clean_birthdays)
+
+
+def load_or_fetch_database(source, sheet, cache_file, cleaning_func):
+
+    if not os.path.isfile(cache_file):
+        print('fetching database from internet and saving to {}'.format(cache_file))
+        maintain_database(source, sheet, cache_file, cleaning_func=cleaning_func)
+        df = quote_db.update_birthdays(source, sheet, cache_file)
+    else:
+        print('using cache file: {}'.format(cache_file))
+        df = pd.read_csv(cache_file)
+        df = cleaning_func(df)
+    return df
+
+def load_or_fetch_all_databases(database_access):
+    global CONFIG
+    global QUOTES
+    global BIRTHDAYS
+
+    QUOTES = load_or_fetch_database(database_access['quote_source'], database_access['quote_sheet'], CONFIG['cache_quote_file'], quote_db.clean_quotes)
+
+    if CONFIG['enable_birthday_quotes']:
+        BIRTHDAYS = load_or_fetch_database(database_access['quote_source'], database_access['birthday_sheet'], CONFIG['cache_birthday_file'], quote_db.clean_birthdays)
 
 class Handler(BaseHTTPRequestHandler):
     def __init__(self, *args, root_dir='root', default_index="index.html", **kwargs):
@@ -58,7 +105,12 @@ class Handler(BaseHTTPRequestHandler):
         incoming_dict = json.loads(post_body)
         # print("post body: " + str(incoming_dict))
 
-        # parse this body for settings
+        # parse the incoming dict for commands
+        if 'force_quote_change' in incoming_dict and incoming_dict['force_quote_change']:
+            change_current_quote()
+
+
+        # parse the incoming dict for settings
         config_changed = False
         global CONFIG
         for key in CONFIG.keys():
@@ -69,7 +121,15 @@ class Handler(BaseHTTPRequestHandler):
                 # try to match the type. got this is bad. dont look!
                 try:
                     convert_value = type(old_value)(new_value)
-                    print("setting key '{}'' to {}".format(key, convert_value))
+
+                    # handle Booleans specially
+                    if type(old_value) == type(True):
+                        if new_value.isnumeric():
+                            convert_value = bool(int(new_value))
+                        else:
+                            convert_value = ('TRUE' == new_value.upper())
+
+                    print("setting key '{}' to {} (converted from \"{}\")".format(key, convert_value, new_value))
                     CONFIG[key] = convert_value
                     config_changed = True
                 except Exception as e:
@@ -78,6 +138,7 @@ class Handler(BaseHTTPRequestHandler):
         # write new config to disk
         if config_changed:
             print('overwriting config file')
+            print('')
             global CONFIG_FILE
             json_obj = json.dumps(CONFIG, indent = 4) 
             with open(CONFIG_FILE, "w") as f:
@@ -122,7 +183,6 @@ class Handler(BaseHTTPRequestHandler):
 
         # send desired file
         if os.path.exists(file_path):
-            print('serving file {}'.format(file_path))
             with open(file_path, 'rb') as f:
                 self.wfile.write(f.read())
 
@@ -142,7 +202,7 @@ class Handler(BaseHTTPRequestHandler):
         # send response
         self._send_file(file_path, )
 
-def main(database_file: str, config_file: str):
+def main(database_access_file: str, config_file: str):
 
     global CONFIG
     global QUOTES
@@ -152,8 +212,8 @@ def main(database_file: str, config_file: str):
     CONFIG_FILE = config_file
 
     # check database file exists
-    if not os.path.isfile(database_file):
-        print("database file '{}' doesnt exist".format(database_file))
+    if not os.path.isfile(database_access_file):
+        print("database file '{}' doesnt exist".format(database_access_file))
         return
     
     # check config file exists
@@ -162,31 +222,22 @@ def main(database_file: str, config_file: str):
         return
     
     # load info needed to fetch database
-    with open(database_file, 'rb') as f:
-        database_metadata = json.load(f)
+    with open(database_access_file, 'rb') as f:
+        database_access = json.load(f)
 
     # load config
     with open(CONFIG_FILE, 'rb') as f:
         CONFIG = json.load(f)
 
-    # load quotes and save to csv if not present. this is mostly for debugging
-    if not os.path.isfile(CONFIG['cache_quote_file']):
-        print('fetching quotes from internet')
-        QUOTES = quote_db.update_quotes(database_metadata['quote_source'], database_metadata['quote_sheet'], CONFIG['cache_quote_file'])
-    else:
-        print('using cache file: {}'.format(CONFIG['cache_quote_file']))
-        QUOTES = pd.read_csv(CONFIG['cache_quote_file']).fillna('')
+    # load or fetch databaseses and save to csv if not present
+    load_or_fetch_all_databases(database_access)
+    print("quotes:")
     print(QUOTES)
+    print()
+    print("birthdays:")
+    print(BIRTHDAYS)
+    print()
 
-
-    if CONFIG['enable_birthday_quotes']:
-        if not os.path.isfile(CONFIG['cache_birthday_file']):
-            print('fetching birthdays from internet')
-            BIRTHDAYS = quote_db.update_birthdays(database_metadata['quote_source'], database_metadata['birthday_sheet'], CONFIG['cache_birthday_file'])
-        else:
-            print('using cache file: {}'.format(CONFIG['cache_birthday_file']))
-            BIRTHDAYS = pd.read_csv(CONFIG['cache_birthday_file']).fillna('')
-        print(BIRTHDAYS)
 
     # start time 
     current_time_s = time.time()
@@ -208,16 +259,12 @@ def main(database_file: str, config_file: str):
         if current_time_s >= next_db_query_s:
             last_db_query_s = current_time_s # allows slipping but thats fine for us
             print('updating database')
-
-            QUOTES = quote_db.update_quotes(database_metadata['quote_source'], database_metadata['quote_sheet'])
-
-            if CONFIG['enable_birthday_quotes']:
-                BIRTHDAYS = quote_db.update_birthdays(database_metadata['quote_source'], database_metadata['birthday_sheet'])
+            maintain_all_databases(database_access)
 
         next_quote_change_s = last_quote_change_s + CONFIG['quote_change_period_m']*60 # written this way because updates rates may change
         if current_time_s >= next_quote_change_s:
             last_quote_change_s = current_time_s # allows slipping but thats fine for us
-            change_quote()
+            change_current_quote()
 
 
 if __name__ == "__main__":
