@@ -40,13 +40,6 @@ def dict_keys_to_lowercase(d):
     return {k.lower(): v for k, v in d.items()}
 
 
-def convert_value(current_value, new_value, key):
-    config_changed = False
-    
-    
-    return convert_value, config_changed
-
-
 def merge_dict_into_config(new_config):
     global CONFIG
     global CONFIG_FILE
@@ -87,7 +80,7 @@ def merge_dict_into_config(new_config):
 
 
 # fetch the new quotes file and save it if it is different than what we already have in memory
-def maintain_database(source, sheet, cache_file, existing_db=None, cleaning_func=None):
+def fetch_and_save_database(source, sheet, cache_file, existing_db=None, cleaning_func=None):
     new_db_raw = quote_db.get_spreadsheet(source, sheet)
     new_db = cleaning_func(new_db_raw) if cleaning_func else new_db_raw
     if (existing_db is None) or (not existing_db.equals(new_db)):
@@ -96,29 +89,30 @@ def maintain_database(source, sheet, cache_file, existing_db=None, cleaning_func
     return new_db
 
 
-def maintain_all_databases(database_access):
+def fetch_and_save_all_databases(database_access):
     global CONFIG
     global QUOTES
     global BIRTHDAYS
 
     # fetch the new quotes file and save it if it is different than what we already have in memory
-    QUOTES = maintain_database(database_access['quote_source'], database_access['quote_sheet'], CONFIG['cache_quote_file'], existing_db=QUOTES, cleaning_func=quote_db.clean_quotes)
+    QUOTES = fetch_and_save_database(database_access['quote_source'], database_access['quote_sheet'], CONFIG['cache_quote_file'], existing_db=QUOTES, cleaning_func=quote_db.clean_quotes)
 
     if CONFIG['enable_birthday_quotes']:
         # fetch the new birthdays file and save it if it is different than what we already have in memory
-        BIRTHDAYS = maintain_database(database_access['quote_source'], database_access['birthday_sheet'], CONFIG['cache_birthday_file'], existing_db=BIRTHDAYS, cleaning_func=quote_db.clean_birthdays)
+        BIRTHDAYS = fetch_and_save_database(database_access['quote_source'], database_access['birthday_sheet'], CONFIG['cache_birthday_file'], existing_db=BIRTHDAYS, cleaning_func=quote_db.clean_birthdays)
 
 
 def load_or_fetch_database(source, sheet, cache_file, cleaning_func):
 
     if not os.path.isfile(cache_file):
         print('fetching database from internet and saving to {}'.format(cache_file))
-        df = maintain_database(source, sheet, cache_file, cleaning_func=cleaning_func)
+        df = fetch_and_save_database(source, sheet, cache_file, cleaning_func=cleaning_func)
     else:
         print('using cache file: {}'.format(cache_file))
         df = pd.read_csv(cache_file)
         df = cleaning_func(df)
     return df
+
 
 def load_or_fetch_all_databases(database_access):
     global CONFIG
@@ -129,6 +123,7 @@ def load_or_fetch_all_databases(database_access):
 
     if CONFIG['enable_birthday_quotes']:
         BIRTHDAYS = load_or_fetch_database(database_access['quote_source'], database_access['birthday_sheet'], CONFIG['cache_birthday_file'], quote_db.clean_birthdays)
+
 
 class Handler(BaseHTTPRequestHandler):
     def __init__(self, *args, root_dir='root', default_index="index.html", **kwargs):
@@ -283,7 +278,7 @@ def main(database_access_file: str, config_file: str):
         if current_time_s >= next_db_query_s:
             last_db_query_s = current_time_s # allows slipping but thats fine for us
             print('updating database')
-            maintain_all_databases(database_access)
+            fetch_and_save_all_databases(database_access)
 
         next_quote_change_s = last_quote_change_s + CONFIG['quote_change_period_m']*60 # written this way because updates rates may change
         if current_time_s >= next_quote_change_s:
