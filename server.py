@@ -47,24 +47,28 @@ def merge_dict_into_config(new_config):
     for key in CONFIG.keys():
         if key in new_config:
             try:
+                new_value = new_config[key]
+                old_value = CONFIG[key]
                 # For whatever reason it gets unhappy if the types are already the same and bools
-                if CONFIG[key] == new_config[key]:
+                if old_value == new_value:
                     continue
                 # Coerce strings to bools and ints
-                convert_value = type(CONFIG[key])(new_config[key])
+                convert_value = type(old_value)(new_value)
 
                 # handle Booleans specially
-                if type(CONFIG[key]) == type(True):
+                if type(old_value) == type(True):
                     if new_config[key].isnumeric():
-                        convert_value = bool(int(new_config[key]))
+                        convert_value = bool(int(new_value))
                     else:
-                        convert_value = ('TRUE' == new_config[key].upper())
+                        convert_value = ('TRUE' == new_value.upper()) or ('T' == new_value.upper())
 
                 # Don't write again if they are the same
-                if CONFIG[key] == convert_value:
+                if old_value == convert_value:
                     continue
+                
+                CONFIG[key] = convert_value
 
-                print("setting key '{}' to {} (converted from \"{}\")".format(key, CONFIG[key], convert_value))
+                print("setting key '{}' to {} (converted from \"{}\")".format(key, convert_value, new_value))
                 config_changed = True
             except Exception as e:
                 print("had error casting the given type to the destination type. key: '{}', source type: {}, destination type: {}".format(key, type(new_config[key]), type(CONFIG[key])))

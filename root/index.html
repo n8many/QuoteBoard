@@ -54,15 +54,18 @@
             interval_counter.style.display = "inline";
         }
 
-
         function handle_server_response(response) {
-
             // clear connection loss message
             connection_loss_msg.innerHTML = ""
 
             // handle received info
             if ("config" in response) {
                 // console.log(response["config"])
+                if ('sfw' in response['config'] && response['config']['sfw'] ) {
+                    quote_body.innerHTML = ""
+                    quote_author.innerHTML = ""
+                    return
+                }
             }
             if ("current_quote_info" in response) {
                 current_quote_info = response["current_quote_info"]
