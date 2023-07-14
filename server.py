@@ -113,8 +113,7 @@ def load_or_fetch_database(source, sheet, cache_file, cleaning_func):
 
     if not os.path.isfile(cache_file):
         print('fetching database from internet and saving to {}'.format(cache_file))
-        maintain_database(source, sheet, cache_file, cleaning_func=cleaning_func)
-        df = quote_db.fetch_birthdays(source, sheet, cache_file)
+        df = maintain_database(source, sheet, cache_file, cleaning_func=cleaning_func)
     else:
         print('using cache file: {}'.format(cache_file))
         df = pd.read_csv(cache_file)

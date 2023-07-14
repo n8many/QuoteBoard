@@ -8,6 +8,7 @@ body {
 #quote_body {
     color: white;
     font-size: 80px;
+    font-style: italic;
   }
 
 #quote_author {
