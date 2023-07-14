@@ -47,7 +47,7 @@ def convert_value(current_value, new_value, key):
     return convert_value, config_changed
 
 
-def load_config(new_config):
+def merge_dict_into_config(new_config):
     global CONFIG
     global CONFIG_FILE
     config_changed = False
@@ -158,7 +158,7 @@ class Handler(BaseHTTPRequestHandler):
         # parse the incoming dict for settings
         config_changed = False
         global CONFIG
-        load_config(incoming_dict)
+        merge_dict_into_config(incoming_dict)
         
         # build our response dict
         response_dict = {}
@@ -251,7 +251,7 @@ def main(database_access_file: str, config_file: str):
         CONFIG = json.load(f)
 
     with open(config_file) as f:
-        load_config(new_config=json.load(f))
+        merge_dict_into_config(new_config=json.load(f))
 
     # load or fetch databaseses and save to csv if not present
     load_or_fetch_all_databases(database_access)
@@ -268,7 +268,7 @@ def main(database_access_file: str, config_file: str):
     last_db_query_s     = current_time_s
     last_quote_change_s = current_time_s
 
-    server = HTTPServer(('', 8080), Handler) # access with http://localhost:8080
+    server = HTTPServer(('', CONFIG['port']), Handler) # access with http://localhost:8080
 
     # server.serve_forever()
     while True:

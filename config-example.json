@@ -1,4 +1,5 @@
 {
+    "port": 8080,
     "cache_quote_file": "quotes.csv",
     "cache_birthday_file": "birthdays.csv",
     "enable_birthday_quotes": true,
