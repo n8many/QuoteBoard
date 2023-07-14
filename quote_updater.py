@@ -50,10 +50,14 @@ def fetch_birthdays(spreadsheet_id: str, sheet_name: str, target_file: Optional[
     return data
 
 if __name__ == "__main__":
+    # We're just gonna leave this out until we rebuild it with JSON
+    """
     from config import quote_source, quote_sheet, quote_file, enable_birthday_quotes, birthday_sheet, birthday_file
-    quotes = update_quotes(quote_source, quote_sheet, quote_file)
+    quotes = fetch_quotes(quote_source, quote_sheet, quote_file)
     print(quotes)
 
     if enable_birthday_quotes:
-        birthdays = update_birthdays(quote_source, birthday_sheet, birthday_file)
+        birthdays = fetch_birthdays(quote_source, birthday_sheet, birthday_file)
         print(birthdays)
+    """
+    

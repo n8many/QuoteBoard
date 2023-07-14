@@ -40,6 +40,52 @@ def dict_keys_to_lowercase(d):
     return {k.lower(): v for k, v in d.items()}
 
 
+def convert_value(current_value, new_value, key):
+    config_changed = False
+    
+    
+    return convert_value, config_changed
+
+
+def load_config(new_config):
+    global CONFIG
+    global CONFIG_FILE
+    config_changed = False
+    for key in CONFIG.keys():
+        if key in new_config:
+            try:
+                # For whatever reason it gets unhappy if the types are already the same and bools
+                if CONFIG[key] == new_config[key]:
+                    continue
+                # Coerce strings to bools and ints
+                convert_value = type(CONFIG[key])(new_config[key])
+
+                # handle Booleans specially
+                if type(CONFIG[key]) == type(True):
+                    if new_config[key].isnumeric():
+                        convert_value = bool(int(new_config[key]))
+                    else:
+                        convert_value = ('TRUE' == new_config[key].upper())
+
+                # Don't write again if they are the same
+                if CONFIG[key] == convert_value:
+                    continue
+
+                print("setting key '{}' to {} (converted from \"{}\")".format(key, CONFIG[key], convert_value))
+                config_changed = True
+            except Exception as e:
+                print("had error casting the given type to the destination type. key: '{}', source type: {}, destination type: {}".format(key, type(new_config[key]), type(CONFIG[key])))
+                
+    # write new config to disk
+    if config_changed:
+        print('overwriting config file')
+        print('')
+        global CONFIG_FILE
+        json_obj = json.dumps(CONFIG, indent = 4) 
+        with open(CONFIG_FILE, "w") as f:
+            f.write(json_obj)
+
+
 # fetch the new quotes file and save it if it is different than what we already have in memory
 def maintain_database(source, sheet, cache_file, existing_db=None, cleaning_func=None):
     new_db_raw = quote_db.get_spreadsheet(source, sheet)
@@ -68,7 +114,7 @@ def load_or_fetch_database(source, sheet, cache_file, cleaning_func):
     if not os.path.isfile(cache_file):
         print('fetching database from internet and saving to {}'.format(cache_file))
         maintain_database(source, sheet, cache_file, cleaning_func=cleaning_func)
-        df = quote_db.update_birthdays(source, sheet, cache_file)
+        df = quote_db.fetch_birthdays(source, sheet, cache_file)
     else:
         print('using cache file: {}'.format(cache_file))
         df = pd.read_csv(cache_file)
@@ -113,37 +159,8 @@ class Handler(BaseHTTPRequestHandler):
         # parse the incoming dict for settings
         config_changed = False
         global CONFIG
-        for key in CONFIG.keys():
-            if key in incoming_dict:
-                new_value = incoming_dict[key]
-                old_value = CONFIG[key]
-
-                # try to match the type. got this is bad. dont look!
-                try:
-                    convert_value = type(old_value)(new_value)
-
-                    # handle Booleans specially
-                    if type(old_value) == type(True):
-                        if new_value.isnumeric():
-                            convert_value = bool(int(new_value))
-                        else:
-                            convert_value = ('TRUE' == new_value.upper())
-
-                    print("setting key '{}' to {} (converted from \"{}\")".format(key, convert_value, new_value))
-                    CONFIG[key] = convert_value
-                    config_changed = True
-                except Exception as e:
-                    print("had error casting the given type to the destination type. key: '{}', source type: {}, destination type: {}".format(key, type(new_value), type(old_value)))
+        load_config(incoming_dict)
         
-        # write new config to disk
-        if config_changed:
-            print('overwriting config file')
-            print('')
-            global CONFIG_FILE
-            json_obj = json.dumps(CONFIG, indent = 4) 
-            with open(CONFIG_FILE, "w") as f:
-                f.write(json_obj)
-
         # build our response dict
         response_dict = {}
 
@@ -216,6 +233,11 @@ def main(database_access_file: str, config_file: str):
         print("database file '{}' doesnt exist".format(database_access_file))
         return
     
+    # check config example file exists
+    if not os.path.isfile('config-example.json'):
+        print("example config file '{}' doesnt exist".format('config-example.json'))
+        return
+    
     # check config file exists
     if not os.path.isfile(config_file):
         print("config file '{}' doesnt exist".format(config_file))
@@ -226,8 +248,11 @@ def main(database_access_file: str, config_file: str):
         database_access = json.load(f)
 
     # load config
-    with open(CONFIG_FILE, 'rb') as f:
+    with open('config-example.json') as f:
         CONFIG = json.load(f)
+
+    with open(config_file) as f:
+        load_config(new_config=json.load(f))
 
     # load or fetch databaseses and save to csv if not present
     load_or_fetch_all_databases(database_access)
@@ -268,4 +293,6 @@ def main(database_access_file: str, config_file: str):
 
 
 if __name__ == "__main__":
+    if not os.path.exists('config.json'):
+        shutil.copy('config-example.json', 'config.json')
     main('database.json', 'config.json')
