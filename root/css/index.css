@@ -7,13 +7,13 @@ body {
 
 #quote_body {
     color: white;
-    font-size: 80px;
+    font-size: 100px;
     font-style: italic;
   }
 
 #quote_author {
-      color: red;
-      font-size: 20px;
+      color: rgb(184, 184, 184);
+      font-size: 40px;
       text-align: right;
 }
 
