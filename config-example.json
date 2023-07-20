@@ -4,7 +4,7 @@
     "cache_birthday_file": "birthdays.csv",
     "enable_birthday_quotes": true,
     "database_query_period_m": 60.0,
-    "quote_change_period_m": 20,
+    "quote_change_period_m": 20.0,
     "antirepeat_depth": 20,
     "sfw": false
 }
