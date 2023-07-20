@@ -39,13 +39,13 @@ def dict_keys_to_lowercase(d):
     return {k.lower(): v for k, v in d.items()}
 
 
-def merge_dict_into_config(config, new_config, save_file=None):
-    config_changed = False
-    for key in config.keys():
-        if key in new_config:
+def merge_dict_into_dict(dst, src, save_file=None):
+    changed = False
+    for key in dst.keys():
+        if key in src:
             try:
-                new_value = new_config[key]
-                old_value = config[key]
+                new_value = src[key]
+                old_value = dst[key]
                 # For whatever reason it gets unhappy if the types are already the same and bools
                 if old_value == new_value:
                     continue
@@ -54,7 +54,7 @@ def merge_dict_into_config(config, new_config, save_file=None):
 
                 # handle Booleans specially
                 if type(old_value) == type(True):
-                    if new_config[key].isnumeric():
+                    if src[key].isnumeric():
                         convert_value = bool(int(new_value))
                     else:
                         convert_value = ('TRUE' == new_value.upper()) or ('T' == new_value.upper())
@@ -63,18 +63,18 @@ def merge_dict_into_config(config, new_config, save_file=None):
                 if old_value == convert_value:
                     continue
                 
-                config[key] = convert_value
+                dst[key] = convert_value
 
                 print("setting key '{}' to {} (converted from \"{}\")".format(key, convert_value, new_value))
-                config_changed = True
+                changed = True
             except Exception as e:
-                print("had error casting the given type to the destination type. key: '{}', source type: {}, destination type: {}. exception: {}".format(key, type(new_config[key]), type(config[key]), e))
+                print("had error casting the given type to the destination type. key: '{}', source type: {}, destination type: {}. exception: {}".format(key, type(src[key]), type(dst[key]), e))
                 
     # write new config to disk
-    if config_changed and save_file:
-        print('overwriting config file')
+    if changed and save_file:
+        print('overwriting file {}'.format(save_file))
         print('')
-        json_obj = json.dumps(config, indent = 4) 
+        json_obj = json.dumps(dst, indent = 4) 
         with open(save_file, "w") as f:
             f.write(json_obj)
 
@@ -136,7 +136,7 @@ def on_post(self, config, config_file, quotes, birthdays):
 
 
     # parse the incoming dict for settings
-    merge_dict_into_config(config, incoming_dict, save_file=config_file)
+    merge_dict_into_dict(config, incoming_dict, save_file=config_file)
     
     # build our response dict
     response_dict = {}
@@ -182,7 +182,7 @@ def main(database_access_file: str, config_file: str):
         config = json.load(f)
 
     with open(config_file) as f:
-        merge_dict_into_config(config, new_config=json.load(f), save_file=config_file)
+        merge_dict_into_dict(config, json.load(f), save_file=config_file)
 
     # load or fetch databaseses and save to csv if not present
 
