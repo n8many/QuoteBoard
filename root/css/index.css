@@ -6,15 +6,17 @@ body {
 }
 
 #quote_body {
+    font-family: 'Times New Roman', Times, serif;
     color: white;
     font-size: 100px;
     font-style: italic;
   }
 
 #quote_author {
-      color: rgb(184, 184, 184);
-      font-size: 40px;
-      text-align: right;
+    font-family: 'Times New Roman', Times, serif;
+    color: rgb(184, 184, 184);
+    font-size: 40px;
+    text-align: right;
 }
 
 #connection_loss_msg {
@@ -37,6 +39,6 @@ q {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 90vh;
+    height: calc(100vh - 80px);
     border: 3px solid green; 
 }
