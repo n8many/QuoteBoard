@@ -40,5 +40,4 @@ q {
     justify-content: center;
     align-items: center;
     height: calc(100vh - 80px);
-    border: 3px solid green; 
 }
