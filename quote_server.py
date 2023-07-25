@@ -50,15 +50,14 @@ def fetch_and_save_database(source, sheet, cache_file, existing_db=None, cleanin
     return new_db
 
 
-def fetch_and_save_all_databases(config, database_access):
+def fetch_and_save_all_databases(config, database_access, existing_quotes=None, existing_birthdays=None):
 
     # fetch the new quotes file and save it if it is different than what we already have in memory
-    quotes = fetch_and_save_database(database_access['quote_source'], database_access['quote_sheet'], config['cache_quote_file'], existing_db=quotes, cleaning_func=quote_db.clean_quotes)
+    quotes = fetch_and_save_database(database_access['quote_source'], database_access['quote_sheet'], config['cache_quote_file'], existing_db=existing_quotes, cleaning_func=quote_db.clean_quotes)
 
-    birthdays = None
     if config['enable_birthday_quotes']:
         # fetch the new birthdays file and save it if it is different than what we already have in memory
-        birthdays = fetch_and_save_database(database_access['quote_source'], database_access['birthday_sheet'], config['cache_birthday_file'], existing_db=birthdays, cleaning_func=quote_db.clean_birthdays)
+        birthdays = fetch_and_save_database(database_access['quote_source'], database_access['birthday_sheet'], config['cache_birthday_file'], existing_db=existing_birthdays, cleaning_func=quote_db.clean_birthdays)
 
     return quotes, birthdays
 
@@ -188,7 +187,7 @@ def main(database_access_file: str, config_file: str):
         if current_time_s >= next_db_query_s:
             last_db_query_s = current_time_s # allows slipping but thats fine for us
             print('updating database')
-            quotes, birthdays = fetch_and_save_all_databases(config, database_access)
+            quotes, birthdays = fetch_and_save_all_databases(config, database_access, existing_quotes=quotes, existing_birthdays=birthdays)
 
         next_quote_change_s = last_quote_change_s + config['quote_change_period_m']*60 # written this way because updates rates may change
         if current_time_s >= next_quote_change_s:
