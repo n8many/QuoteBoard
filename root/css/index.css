@@ -1,0 +1,43 @@
+/* Keith Rausch */
+
+body {
+    background-color: #080808;
+    color: white;
+}
+
+#quote_body {
+    font-family: 'Times New Roman', Times, serif;
+    color: white;
+    font-size: 100px;
+    font-style: italic;
+  }
+
+#quote_author {
+    font-family: 'Times New Roman', Times, serif;
+    color: rgb(184, 184, 184);
+    font-size: 40px;
+    text-align: right;
+}
+
+#connection_loss_msg {
+    color: red;
+    font-size: 40px;
+}
+
+/* quotes stuff */
+q {
+    quotes: "“" "”" "‘" "’";
+  }
+  q::before {
+      content: open-quote;
+  }
+  q::after {
+      content: close-quote;
+  }
+
+.center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: calc(100vh - 80px);
+}

@@ -1,0 +1,105 @@
+<!-- Keith Rausch -->
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+    <meta content="width=device-width,initial-scale=1.0" name="viewport">
+    
+    <title></title>
+    <!-- cant figure out how to send favicon from python -->
+    <!-- <link rel="shortcut icon" type="image/jpg" href="favicon.ico"/> -->
+
+    <!-- css -->
+    <link rel="stylesheet" href="css/index.css" type="text/css">
+
+    <!-- other utils-->
+    <script src="js/utils.js"></script>
+</head>
+
+<body>
+    <div>
+        <input class="border border-secondary rounded" id="uri" size="20" style="margin-bottom: 5px;" value="">
+    </div>
+    <div id="interval_counter"></div>  <!-- TODO REMOVE ME. -->
+    <div id="connection_loss_msg"></div>
+    <div class="center">
+          <q id="quote_body"></q>
+    </div>
+    <div id="quote_author"></div>
+
+    <script>
+        window.onload = function () {
+            // auto detect the websocket path
+            // figure out if http or https
+            // if the href is "https://website.org/DEVICE/settings.html", then 
+            // the websocket should connect to "wss://website.org/DEVICE/""
+            url = location.href;
+            path = url.substring(url.indexOf('//') + 2, url.lastIndexOf('/') +
+                1); // https://path/with/slashes/FILE_NAME_NOT_INCLUDED.html
+            uri.value = location.protocol + '//' + path;
+
+            hide_debugging_stuff()
+        }
+
+        function hide_debugging_stuff() {
+            uri.style.display = "none";
+            interval_counter.style.display = "none";
+        }
+
+        function show_debugging_stuff() {
+            uri.style.display = "inline";
+            interval_counter.style.display = "inline";
+        }
+
+        function handle_server_response(response) {
+            // clear connection loss message
+            connection_loss_msg.innerHTML = ""
+
+            // handle received info
+            if ("config" in response) {
+                // console.log(response["config"])
+                if ('sfw' in response['config'] && response['config']['sfw'] ) {
+                    quote_body.innerHTML = ""
+                    quote_author.innerHTML = ""
+                    return
+                }
+            }
+            if ("current_quote_info" in response) {
+                current_quote_info = response["current_quote_info"]
+                if ("quote" in current_quote_info)
+                    quote_body.innerHTML = current_quote_info["quote"]
+                else
+                    quote_body.innerHTML = "<error>"
+                if ("who" in current_quote_info) 
+                    quote_author.innerHTML = current_quote_info["who"]
+                else
+                    quote_author.innerHTML = "unknown"
+            }
+        }
+
+        function handle_connection_loss() {
+            connection_loss_msg.innerHTML = "CONNECTION LOST"
+            quote_body.innerHTML = ""
+            quote_author.innerHTML = ""
+        }
+
+        // set up auto-query
+        function run_on_interval() {
+            interval_count += 1;
+            interval_counter.innerHTML = "automatic query count: " + interval_count;
+            query_server(uri.value+'/query', {}, handle_server_response, handle_connection_loss);
+        }
+        var interval_count = 0;
+        var interval_id = setInterval(run_on_interval, 1000);
+
+    </script>
+                                                                                                                          
+
+</body>
+
+
+
+</html>
