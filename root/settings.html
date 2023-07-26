@@ -79,7 +79,18 @@
                     for (const [key, value] of Object.entries(response['config'])) {
                         var label_text = key
                         node.innerHTML += `<label for="${label_text}">${label_text}:</label>` 
-                        node.innerHTML += `<input type='text' id="${label_text}" name="${label_text}" value="${value}">`
+                        value_string = `${value}`
+                        
+                        // replace quotes so they dont break the string below
+                        value_escaped = value_string.replaceAll("\"", "&quot;");
+
+                        // attempt to auto size text boxes
+                        n_chars_min = 20
+                        n_chars_max = 500
+                        n_chars = Math.min(Math.max(value_string.length, n_chars_min), n_chars_max); // dont use the escaped string
+
+                        // done
+                        node.innerHTML += `<input type='text' id="${label_text}" name="${label_text}" value="${value_escaped}" style="width:${n_chars}ch">`
                         node.innerHTML += "<br>"
                     }
                 }

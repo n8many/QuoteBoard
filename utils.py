@@ -1,5 +1,9 @@
 import json
 
+
+def dict_keys_to_lowercase(d):
+    return {k.lower(): v for k, v in d.items()}
+
 def merge_dict_into_dict(dst, src, save_file=None):
     changed = False
     for key in dst.keys():

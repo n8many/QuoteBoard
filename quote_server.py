@@ -36,10 +36,6 @@ def change_current_quote():
     CURRENT_QUOTE_INDEX = CURRENT_QUOTE_INDEX+1
 
 
-def dict_keys_to_lowercase(d):
-    return {k.lower(): v for k, v in d.items()}
-
-
 # fetch the new quotes file and save it if it is different than what we already have in memory
 def fetch_and_save_database(source, sheet, cache_file, existing_db=None, cleaning_func=None):
     new_db_raw = quote_db.get_spreadsheet(source, sheet)
@@ -105,10 +101,10 @@ def on_post(self, config, config_file, quotes, birthdays):
     # append current quote info
     chosen_quote = get_current_quote(quotes)
     if chosen_quote is not None:
-        response_dict['current_quote_info'] = dict_keys_to_lowercase(chosen_quote)
+        response_dict['current_quote_info'] = utils.dict_keys_to_lowercase(chosen_quote)
 
     # append settings
-    response_dict['config'] = dict_keys_to_lowercase(config)
+    response_dict['config'] = utils.dict_keys_to_lowercase(config)
 
     # send response
     self.send_response(200)
