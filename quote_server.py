@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from functools import partial
 import quote_updater as quote_db
 from server import HTTPHandler 
-from utils import merge_dict_into_dict
+from utils import merge_dict_into_dict, dict_keys_to_lowercase
 
 CURRENT_QUOTE_INDEX = 0
 
@@ -101,10 +101,10 @@ def on_post(self, config, config_file, quotes, birthdays):
     # append current quote info
     chosen_quote = get_current_quote(quotes)
     if chosen_quote is not None:
-        response_dict['current_quote_info'] = utils.dict_keys_to_lowercase(chosen_quote)
+        response_dict['current_quote_info'] = dict_keys_to_lowercase(chosen_quote)
 
     # append settings
-    response_dict['config'] = utils.dict_keys_to_lowercase(config)
+    response_dict['config'] = dict_keys_to_lowercase(config)
 
     # send response
     self.send_response(200)
