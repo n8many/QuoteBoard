@@ -34,6 +34,10 @@
         <div>
             <input type="submit" id="btn_force_quote_change", value="Force Quote Change">
         </div>
+        <br>
+        <div>
+            <input type="submit" id="btn_force_db_update", value="Force Database Update", style="background: red; color: white;">
+        </div>
 
         <script>
 
@@ -109,6 +113,11 @@
             btn_force_quote_change.onclick = function () {            
 
                 query_server(uri.value+'/button', {'force_quote_change':true});
+            };
+
+            btn_force_db_update.onclick = function () {            
+
+                query_server(uri.value+'/button', {'force_db_update':true});
             };
 
         </script>
