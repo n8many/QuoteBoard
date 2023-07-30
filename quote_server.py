@@ -8,7 +8,7 @@ from functools import partial
 import quote_updater as quote_db
 from server import HTTPHandler 
 from utils import merge_dict_into_dict, dict_keys_to_lowercase
-
+from quote_picker import pick_quote
 
 def fetch_and_save_database(source, sheet, cache_file, existing_db=None, cleaning_func=None):
     # generic fetch and save function for both quotes and birthday information
@@ -39,26 +39,36 @@ class QuoteServerBackend:
         # Set up data structures
         self.quotes=pd.DataFrame()
         self.birthdays=pd.DataFrame()
-        self.current_quote_index=0
         self.recent_quotes = []
+        self.current_quote_id=0
 
         # Get the quotes
         self.load_or_fetch_all_databases()
+        self.change_current_quote()
 
-    def get_current_quote(self):
-
-        n_quotes = len(self.quotes)
-
+    def get_current_quote(self):            
         chosen_quote = None
-
-        # safety check db size
-        if n_quotes > 0:
-            chosen_quote = self.quotes.iloc[self.current_quote_index % n_quotes].to_dict()
+        
+        if self.current_quote_id in self.quotes.index:
+            chosen_quote = self.quotes.loc[self.current_quote_id].to_dict()
+        else:
+            # Seems the quotes have changed indices, time to get a new one
+            self.change_current_quote()
+            chosen_quote = self.get_current_quote()  # possibly dangerous...
 
         return chosen_quote
 
     def change_current_quote(self):
-        self.current_quote_index = self.current_quote_index+1
+        self.current_quote_id = pick_quote(self.quotes, 
+                                           self.recent_quotes, 
+                                           self.birthdays if self.config['enable_birthday_quotes'] else None)
+
+        self.recent_quotes.append(self.current_quote_id)
+
+        max_antirepeat = min(self.config['antirepeat_depth'], len(self.quotes)-1)
+        if len(self.recent_quotes) > max_antirepeat:
+            self.recent_quotes = self.recent_quotes[-max_antirepeat:]
+
 
     def fetch_and_save_all_databases(self):
 

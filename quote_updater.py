@@ -1,5 +1,5 @@
 from typing import Optional
-
+from datetime import date, datetime
 import gspread
 import pandas as pd
 
@@ -18,7 +18,16 @@ def clean_birthdays(df):
     # do not modify in place
 
     # df = df.reset_index()
+    def coerce_birthday(x):
+        try:
+            # Currently does not work for leap day babies, but that's only 1/1461, strips to none
+            return datetime.strptime(x,'%m/%d').date().replace(year=date.today().year)
+        except ValueError:
+            return ''
+        
+    df['Birthday'] = df['Birthday'].apply(coerce_birthday)
     df = df.fillna('')
+    
     return df
 
 def get_spreadsheet(spreadsheet_id: str, sheet_name: str) -> pd.DataFrame():
@@ -29,24 +38,6 @@ def get_spreadsheet(spreadsheet_id: str, sheet_name: str) -> pd.DataFrame():
     # TODO may need some sanitization of stray data
     rows = worksheet.get_all_records()
     data = pd.DataFrame(rows)
-    return data
-
-def fetch_quotes(spreadsheet_id: str, sheet_name: str, target_file: Optional[str] = None) -> pd.DataFrame():
-    data = get_spreadsheet(spreadsheet_id, sheet_name)
-    # if target_file is not None:
-    #     data.to_csv(target_file)
-    # data = clean_quotes(data) # clean AFTER saving because nathan's index gets saved and then reloaded and then the table grows without bound
-    # TODO check and enforce column format
-    #data.set_index(pd.util.hash_pandas_object(data), drop=False, inplace=True)
-    return data
-
-def fetch_birthdays(spreadsheet_id: str, sheet_name: str, target_file: Optional[str] = None) -> pd.DataFrame():
-    data = get_spreadsheet(spreadsheet_id, sheet_name)
-    # if target_file is not None:
-    #     data.to_csv(target_file, index=False)
-    # data = clean_birthdays(data)
-    # TODO check and enforce column format
-    # TODO make birthday column actual date objects
     return data
 
 if __name__ == "__main__":
