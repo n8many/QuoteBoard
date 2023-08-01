@@ -24,6 +24,8 @@ def clean_birthdays(df):
             return datetime.strptime(x,'%m/%d').date().replace(year=date.today().year)
         except ValueError:
             return ''
+        except TypeError:
+            return ''
         
     df['Birthday'] = df['Birthday'].apply(coerce_birthday)
     df = df.fillna('')

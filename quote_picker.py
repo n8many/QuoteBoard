@@ -10,6 +10,8 @@ def date_is_today(x):
             return x.month==today.month & x.day==today.day
         except ValueError:
             return False
+        except AttributeError:
+            return False
 
 
 def pick_random_index(quotes: pd.DataFrame):
