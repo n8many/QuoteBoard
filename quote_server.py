@@ -64,6 +64,9 @@ class QuoteServerBackend:
 
         self.offline_mode = database is None or len(database)==0
 
+        self.last_quote_change = time.time()
+        self.last_database_update = time.time()
+
         # Get the quotes
         self.load_databases()
         self.change_current_quote()
@@ -81,6 +84,7 @@ class QuoteServerBackend:
         return chosen_quote
 
     def change_current_quote(self):
+        self.last_quote_change = time.time()
         self.current_quote_id = pick_quote(self.quotes, 
                                            self.recent_quotes, 
                                            self.birthdays if self.config['enable_birthday_quotes'] else None)
@@ -90,6 +94,7 @@ class QuoteServerBackend:
         max_antirepeat = min(self.config['antirepeat_depth'], len(self.quotes)-1)
         if len(self.recent_quotes) > max_antirepeat:
             self.recent_quotes = self.recent_quotes[-max_antirepeat:]
+
     
     def load_databases(self):
         self.quotes = load_or_fetch_database(self.database['quote_source'], self.database['quote_sheet'], self.config['cache_quote_file'], quote_db.clean_quotes)
@@ -98,6 +103,7 @@ class QuoteServerBackend:
             self.birthdays = load_or_fetch_database(self.database['quote_source'], self.database['birthday_sheet'], self.config['cache_birthday_file'], quote_db.clean_birthdays)
 
     def update_databases(self):
+        self.last_database_update = time.time()
         # If offline, default to direct reading of cache files.
         if self.offline_mode and self.config['cache_quote_file']:
             self.quotes = load_database(self.config['cache_quote_file'], cleaning_func=quote_db.clean_quotes)
@@ -205,17 +211,14 @@ def main(database_access_file: str, config_file: str):
 
         current_time_s = time.time()
 
-        # check if we need to update the quote db
-        next_db_query_s = last_db_query_s + backend.config['database_query_period_m']*60 # written this way because updates rates may change
-        if current_time_s >= next_db_query_s:
-            last_db_query_s = current_time_s # allows slipping but thats fine for us
+        # TODO: make these checks use thread timers to run
+        if backend.last_database_update + backend.config['database_query_period_m']*60 <= current_time_s:
             print('updating database')
             backend.update_databases()
 
-        next_quote_change_s = last_quote_change_s + backend.config['quote_change_period_m']*60 # written this way because updates rates may change
-        if current_time_s >= next_quote_change_s and not ('sfw' in backend.config and backend.config['sfw']): # Prevents updating while not displaying quotes
-            last_quote_change_s = current_time_s # allows slipping but thats fine for us
-            backend.change_current_quote()
+        if backend.last_quote_change + backend.config['quote_change_period_m']*60 <= current_time_s and not ('sfw' in backend.config and backend.config['sfw']):
+            backend.change_current_quote() # Fairly lossy in terms of time...
+            
 
 
 if __name__ == "__main__":
