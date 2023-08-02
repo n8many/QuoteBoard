@@ -10,28 +10,48 @@ from server import HTTPHandler
 from utils import merge_dict_into_dict, dict_keys_to_lowercase
 from quote_picker import pick_quote
 
-def fetch_and_save_database(source, sheet, cache_file, existing_db=None, cleaning_func=None):
-    # generic fetch and save function for both quotes and birthday information
-    new_db_raw = quote_db.get_spreadsheet(source, sheet)
-    new_db = cleaning_func(new_db_raw) if cleaning_func else new_db_raw
-    if (existing_db is None) or (not existing_db.equals(new_db)):
-        new_db_raw.to_csv(cache_file, index=False) # we always save the raw, and no index
-        print("database changed. saving to {}".format(cache_file))
-    return new_db
+from typing import Optional
 
-def load_or_fetch_database(source, sheet, cache_file, cleaning_func):
-    # generic load or fetch function for both quotes and birthday information
-    if not os.path.isfile(cache_file):
-        print('fetching database from internet and saving to {}'.format(cache_file))
-        df = fetch_and_save_database(source, sheet, cache_file, cleaning_func=cleaning_func)
-    else:
+def fetch_database(source, sheet, cleaning_func):
+    try:
+        new_db_raw = quote_db.get_spreadsheet(source, sheet)
+        new_db = cleaning_func(new_db_raw) if cleaning_func else new_db_raw
+        return new_db
+    except Exception as err:
+        print(f"Failed to fetch sheet data from sheet ({err})")
+    return None
+
+def load_database(cache_file, cleaning_func) -> Optional[pd.DataFrame]:
+    if os.path.isfile(cache_file):
         print('using cache file: {}'.format(cache_file))
         df = pd.read_csv(cache_file)
         df = cleaning_func(df)
+        return df
+    else:
+        return None
+
+def save_database(db: pd.DataFrame, cache_file: str):
+    db.to_csv(cache_file, index=False) # we always save the raw, and no index
+    print("database changed. saving to {}".format(cache_file))
+
+def fetch_and_save_database(source, sheet, cache_file, existing_db=None, cleaning_func=None):
+    # generic fetch and save function for both quotes and birthday information
+    if (new_db:=fetch_database(source, sheet, cleaning_func)) is not None:
+        if (existing_db is None) or (not existing_db.equals(new_db)):
+            save_database(new_db, cache_file)
+            print("database changed. saving to {}".format(cache_file))
+        return new_db
+    return existing_db
+
+def load_or_fetch_database(source, sheet, cache_file, cleaning_func):
+    # generic load or fetch function for both quotes and birthday information
+    if (df:=load_database(cache_file, cleaning_func)) is None:
+        print('fetching database from internet and saving to {}'.format(cache_file))
+        df = fetch_and_save_database(source, sheet, cache_file, cleaning_func=cleaning_func)
     return df
 
 class QuoteServerBackend:
-    def __init__(self, config, database) -> None:
+    def __init__(self, config, database: dict) -> None:
         # Load in dicts
         self.config = config
         self.database = database
@@ -42,8 +62,13 @@ class QuoteServerBackend:
         self.recent_quotes = []
         self.current_quote_id=0
 
+        self.offline_mode = database is None or len(database)==0
+
+        self.last_quote_change = time.time()
+        self.last_database_update = time.time()
+
         # Get the quotes
-        self.load_or_fetch_all_databases()
+        self.load_databases()
         self.change_current_quote()
 
     def get_current_quote(self):            
@@ -59,6 +84,7 @@ class QuoteServerBackend:
         return chosen_quote
 
     def change_current_quote(self):
+        self.last_quote_change = time.time()
         self.current_quote_id = pick_quote(self.quotes, 
                                            self.recent_quotes, 
                                            self.birthdays if self.config['enable_birthday_quotes'] else None)
@@ -69,23 +95,29 @@ class QuoteServerBackend:
         if len(self.recent_quotes) > max_antirepeat:
             self.recent_quotes = self.recent_quotes[-max_antirepeat:]
 
-
-    def fetch_and_save_all_databases(self):
-
-        # fetch the new quotes file and save it if it is different than what we already have in memory
-        self.quotes = fetch_and_save_database(self.database['quote_source'], self.database['quote_sheet'], self.config['cache_quote_file'], existing_db=self.quotes, cleaning_func=quote_db.clean_quotes)
-
-        if 'birthday_sheet' in self.database and self.database['birthday_sheet']:
-            # fetch the new birthdays file and save it if it is different than what we already have in memory
-            self.birthdays = fetch_and_save_database(self.database['quote_source'], self.database['birthday_sheet'], self.config['cache_birthday_file'], existing_db=self.birthdays, cleaning_func=quote_db.clean_birthdays)
-
-    def load_or_fetch_all_databases(self):
+    
+    def load_databases(self):
         self.quotes = load_or_fetch_database(self.database['quote_source'], self.database['quote_sheet'], self.config['cache_quote_file'], quote_db.clean_quotes)
         
         if 'birthday_sheet' in self.database and self.database['birthday_sheet']:
             self.birthdays = load_or_fetch_database(self.database['quote_source'], self.database['birthday_sheet'], self.config['cache_birthday_file'], quote_db.clean_birthdays)
 
-def on_post(self, backend, config_file):
+    def update_databases(self):
+        self.last_database_update = time.time()
+        # If offline, default to direct reading of cache files.
+        if self.offline_mode and self.config['cache_quote_file']:
+            self.quotes = load_database(self.config['cache_quote_file'], cleaning_func=quote_db.clean_quotes)
+            if self.config['cache_birthday_file']:
+                self.birthdays = load_database(self.config['cache_birthday_file'], cleaning_func=quote_db.clean_birthdays)
+        else:
+            # fetch the new quotes file and save it if it is different than what we already have in memory
+            self.quotes = fetch_and_save_database(self.database['quote_source'], self.database['quote_sheet'], self.config['cache_quote_file'], self.quotes, quote_db.clean_quotes)
+            if 'birthday_sheet' in self.database and self.database['birthday_sheet']:
+                # fetch the new birthdays file and save it if it is different than what we already have in memory
+                self.birthdays = fetch_and_save_database(self.database['quote_source'], self.database['birthday_sheet'], self.config['cache_birthday_file'], existing_db=self.birthdays, cleaning_func=quote_db.clean_birthdays)
+        print("Databases updated")
+    
+def on_post(self, backend: QuoteServerBackend, config_file: str):
     # get the json sent to us
     content_len = int(self.headers.get('Content-Length'))
     post_body = self.rfile.read(content_len)
@@ -97,8 +129,7 @@ def on_post(self, backend, config_file):
         backend.change_current_quote()
 
     if 'force_db_update' in incoming_dict and incoming_dict['force_db_update']:
-        backend.fetch_and_save_all_databases()
-
+        backend.update_databases()
 
     # parse the incoming dict for settings
     merge_dict_into_dict(backend.config, incoming_dict, save_file=config_file)
@@ -180,17 +211,14 @@ def main(database_access_file: str, config_file: str):
 
         current_time_s = time.time()
 
-        # check if we need to update the quote db
-        next_db_query_s = last_db_query_s + backend.config['database_query_period_m']*60 # written this way because updates rates may change
-        if current_time_s >= next_db_query_s:
-            last_db_query_s = current_time_s # allows slipping but thats fine for us
+        # TODO: make these checks use thread timers to run
+        if backend.last_database_update + backend.config['database_query_period_m']*60 <= current_time_s:
             print('updating database')
-            backend.fetch_and_save_all_databases()
+            backend.update_databases()
 
-        next_quote_change_s = last_quote_change_s + backend.config['quote_change_period_m']*60 # written this way because updates rates may change
-        if current_time_s >= next_quote_change_s and not ('sfw' in backend.config and backend.config['sfw']): # Prevents updating while not displaying quotes
-            last_quote_change_s = current_time_s # allows slipping but thats fine for us
-            backend.change_current_quote()
+        if backend.last_quote_change + backend.config['quote_change_period_m']*60 <= current_time_s and not ('sfw' in backend.config and backend.config['sfw']):
+            backend.change_current_quote() # Fairly lossy in terms of time...
+            
 
 
 if __name__ == "__main__":
