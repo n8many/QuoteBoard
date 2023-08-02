@@ -3,14 +3,18 @@ from datetime import date, datetime
 import gspread
 import pandas as pd
 
+
+# Cleaning functions must be stable (i.e. input = output)
+
 def clean_quotes(df):
     
     # do not modify in place
 
     # remove ppl manually adding quotation marks to beginning and end of quote
-    # df["Quote"] = df["Quote"].str.strip("\"'")
-    df = df.set_index(pd.util.hash_pandas_object(df), drop=False)
     df = df.fillna('')
+    df = df.loc[~(df["Quote"].str.len()==0)]
+    df["Quote"] = df["Quote"].str.strip("\"'")
+    df = df.set_index(pd.util.hash_pandas_object(df), drop=False)
     return df
 
 def clean_birthdays(df):
@@ -20,6 +24,8 @@ def clean_birthdays(df):
     # df = df.reset_index()
     def coerce_birthday(x):
         try:
+            if isinstance(x, datetime.date):
+                return x
             # Currently does not work for leap day babies, but that's only 1/1461, strips to none
             return datetime.strptime(x,'%m/%d').date().replace(year=date.today().year)
         except ValueError:
