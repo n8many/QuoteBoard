@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import date, datetime
+import datetime
 import gspread
 import pandas as pd
 
@@ -27,7 +27,7 @@ def clean_birthdays(df):
             if isinstance(x, datetime.date):
                 return x
             # Currently does not work for leap day babies, but that's only 1/1461, strips to none
-            return datetime.strptime(x,'%m/%d').date().replace(year=date.today().year)
+            return datetime.datetime.strptime(x,'%m/%d').date().replace(year=datetime.date.today().year)
         except ValueError:
             return ''
         except TypeError:

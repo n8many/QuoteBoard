@@ -54,6 +54,7 @@ class QuoteServerBackend:
     def __init__(self, config, database: dict) -> None:
         # Load in dicts
         self.config = config
+        # TODO: break database into source + sheets for better function calls below.
         self.database = database
 
         # Set up data structures
@@ -62,7 +63,7 @@ class QuoteServerBackend:
         self.recent_quotes = []
         self.current_quote_id=0
 
-        self.offline_mode = database is None or len(database)==0
+        self.offline_mode = self.database is None or len(database)==0
 
         self.last_quote_change = time.time()
         self.last_database_update = time.time()
@@ -157,7 +158,12 @@ def main(database_access_file: str, config_file: str):
     # check database file exists
     if not os.path.isfile(database_access_file):
         print("database file '{}' doesnt exist".format(database_access_file))
-        return
+        print("enabling offline mode")
+        database_access = None
+    else:
+        # load info needed to fetch database
+        with open(database_access_file, 'rb') as f:
+            database_access = json.load(f)
     
     # check config example file exists
     if not os.path.isfile('config-example.json'):
@@ -168,10 +174,6 @@ def main(database_access_file: str, config_file: str):
     if not os.path.isfile(config_file):
         print("config file '{}' doesnt exist".format(config_file))
         return
-    
-    # load info needed to fetch database
-    with open(database_access_file, 'rb') as f:
-        database_access = json.load(f)
 
     # load config
     with open('config-example.json') as f:

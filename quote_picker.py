@@ -7,7 +7,7 @@ from typing import Optional
 def date_is_today(x):
         today = date.today()
         try:
-            return x.month==today.month & x.day==today.day
+            return x.month==today.month and x.day==today.day
         except ValueError:
             return False
         except AttributeError:
@@ -27,7 +27,7 @@ def filter_recent_quotes(quotes: pd.DataFrame, recent_quotes: pd.Series):
 
 
 def filter_quotes_by_name(quotes, names):
-    return quotes.loc[quotes.loc['Who'].isin(names)]
+    return quotes.loc[quotes['Who'].isin(names)]
 
 
 def filter_quotes_by_date(quotes, target_date):
