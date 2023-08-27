@@ -8,7 +8,7 @@ from functools import partial
 import quote_updater as quote_db
 from server import HTTPHandler 
 from utils import merge_dict_into_dict, dict_keys_to_lowercase
-from quote_picker import pick_quote
+from quote_picker import pick_quote, get_current_birthdays
 
 from typing import Optional
 
@@ -54,6 +54,7 @@ class QuoteServerBackend:
     def __init__(self, config, database: dict) -> None:
         # Load in dicts
         self.config = config
+        # TODO: break database into source + sheets for better function calls below.
         self.database = database
 
         # Set up data structures
@@ -62,7 +63,7 @@ class QuoteServerBackend:
         self.recent_quotes = []
         self.current_quote_id=0
 
-        self.offline_mode = database is None or len(database)==0
+        self.offline_mode = self.database is None or len(database)==0
 
         self.last_quote_change = time.time()
         self.last_database_update = time.time()
@@ -76,6 +77,11 @@ class QuoteServerBackend:
         
         if self.current_quote_id in self.quotes.index:
             chosen_quote = self.quotes.loc[self.current_quote_id].to_dict()
+
+            # Add 🎂 to name (this may break certain browsers)
+            if self.config['display_birthdays'] and (get_current_birthdays(self.birthdays)['Name']==chosen_quote['Who']).any():
+                chosen_quote['Who'] = chosen_quote['Who'] + ' 🎂'
+
         else:
             # Seems the quotes have changed indices, time to get a new one
             self.change_current_quote()
@@ -157,7 +163,12 @@ def main(database_access_file: str, config_file: str):
     # check database file exists
     if not os.path.isfile(database_access_file):
         print("database file '{}' doesnt exist".format(database_access_file))
-        return
+        print("enabling offline mode")
+        database_access = None
+    else:
+        # load info needed to fetch database
+        with open(database_access_file, 'rb') as f:
+            database_access = json.load(f)
     
     # check config example file exists
     if not os.path.isfile('config-example.json'):
@@ -168,10 +179,6 @@ def main(database_access_file: str, config_file: str):
     if not os.path.isfile(config_file):
         print("config file '{}' doesnt exist".format(config_file))
         return
-    
-    # load info needed to fetch database
-    with open(database_access_file, 'rb') as f:
-        database_access = json.load(f)
 
     # load config
     with open('config-example.json') as f:

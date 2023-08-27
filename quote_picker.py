@@ -7,7 +7,7 @@ from typing import Optional
 def date_is_today(x):
         today = date.today()
         try:
-            return x.month==today.month & x.day==today.day
+            return x.month==today.month and x.day==today.day
         except ValueError:
             return False
         except AttributeError:
@@ -27,7 +27,7 @@ def filter_recent_quotes(quotes: pd.DataFrame, recent_quotes: pd.Series):
 
 
 def filter_quotes_by_name(quotes, names):
-    return quotes.loc[quotes.loc['Who'].isin(names)]
+    return quotes.loc[quotes['Who'].isin(names)]
 
 
 def filter_quotes_by_date(quotes, target_date):
@@ -58,10 +58,13 @@ def pick_quote(quotes: pd.DataFrame, recent_quotes: Optional[list] = None, birth
         # No unused quotes, ignore the recent list
         return pick_random_index(quotes)
 
+def get_current_birthdays(birthdays):
+    return birthdays.loc[birthdays['Birthday'].apply(date_is_today)]
+
 
 def pick_birthday_quote(quotes, birthdays):
     # Pick a quote from the birthday person
-    current_birthdays = birthdays.loc[birthdays['Birthday'].apply(date_is_today)]
+    current_birthdays=get_current_birthdays(birthdays)
 
     if current_birthdays.empty:
         return None
