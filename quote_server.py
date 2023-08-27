@@ -8,7 +8,7 @@ from functools import partial
 import quote_updater as quote_db
 from server import HTTPHandler 
 from utils import merge_dict_into_dict, dict_keys_to_lowercase
-from quote_picker import pick_quote
+from quote_picker import pick_quote, get_current_birthdays
 
 from typing import Optional
 
@@ -77,6 +77,11 @@ class QuoteServerBackend:
         
         if self.current_quote_id in self.quotes.index:
             chosen_quote = self.quotes.loc[self.current_quote_id].to_dict()
+
+            # Add 🎂 to name (this may break certain browsers)
+            if self.config['display_birthdays'] and (get_current_birthdays(self.birthdays)['Name']==chosen_quote['Who']).any():
+                chosen_quote['Who'] = chosen_quote['Who'] + ' 🎂'
+
         else:
             # Seems the quotes have changed indices, time to get a new one
             self.change_current_quote()

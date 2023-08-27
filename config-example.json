@@ -2,6 +2,7 @@
     "port": 8080,
     "cache_quote_file": "quotes.csv",
     "cache_birthday_file": "birthdays.csv",
+    "display_birthdays": true,
     "enable_birthday_quotes": true,
     "database_query_period_m": 60.0,
     "quote_change_period_m": 20.0,
