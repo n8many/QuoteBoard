@@ -27,7 +27,10 @@ def clean_birthdays(df):
             if isinstance(x, datetime.date):
                 return x
             # Currently does not work for leap day babies, but that's only 1/1461, strips to none
-            return datetime.datetime.strptime(x,'%m/%d').date().replace(year=datetime.date.today().year)
+            try:
+                return datetime.datetime.strptime(x,'%Y-%m-%d').date()
+            except ValueError:
+                return datetime.datetime.strptime(x,'%m/%d').date().replace(year=datetime.date.today().year)
         except ValueError:
             return ''
         except TypeError:
