@@ -5,7 +5,9 @@
     "display_birthdays": true,
     "enable_birthday_quotes": true,
     "database_query_period_m": 60.0,
+    "query_database_on_start": false,
     "quote_change_period_m": 20.0,
     "antirepeat_depth": 20,
-    "sfw": false
+    "sfw": false,
+    "debug": false
 }

@@ -69,7 +69,10 @@ class QuoteServerBackend:
         self.last_database_update = time.time()
 
         # Get the quotes
-        self.load_databases()
+        if self.config["query_database_on_start"]:
+            self.update_databases()
+        else:
+            self.load_databases()
         self.change_current_quote()
 
     def get_current_quote(self):            
