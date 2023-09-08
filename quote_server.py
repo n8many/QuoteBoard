@@ -154,14 +154,13 @@ def on_post(self, backend: QuoteServerBackend, config_file: str):
     # append settings
     response_dict['config'] = dict_keys_to_lowercase(backend.config)
 
-    if backend.config['debug']:
-        response_dict['debug_info'] = {
-            'current_time': time.strftime('%d %b %Y %H:%M:%S'),
-            'server_ip': get_server_ip(),
-            'internet_access': "🟢" if check_internet_access() else "🔴",
-            'next_quote_change': time.strftime('%d %b %Y %H:%M:%S', time.gmtime(backend.last_quote_change + backend.config['database_query_period_m']*60)),
-            'last_database_update' : time.strftime('%d %b %Y %H:%M:%S', time.gmtime(backend.last_database_update))
-        }
+    response_dict['debug_info'] = {
+        'current_time': time.strftime('%d %b %Y %H:%M:%S'),
+        'server_ip': get_server_ip(),
+        'internet_access': "🟢" if check_internet_access() else "🔴",
+        'next_quote_change': time.strftime('%d %b %Y %H:%M:%S', time.gmtime(backend.last_quote_change + backend.config['database_query_period_m']*60)),
+        'last_database_update' : time.strftime('%d %b %Y %H:%M:%S', time.gmtime(backend.last_database_update))
+    }
 
     # send response
     self.send_response(200)
