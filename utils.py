@@ -1,4 +1,6 @@
 import json
+import http.client as httplib
+from netifaces import interfaces, ifaddresses, AF_INET
 
 
 def dict_keys_to_lowercase(d):
@@ -42,3 +44,22 @@ def merge_dict_into_dict(dst, src, save_file=None):
         json_obj = json.dumps(dst, indent = 4) 
         with open(save_file, "w") as f:
             f.write(json_obj)
+
+# Shamelessly stolen from https://stackoverflow.com/a/166591
+def get_server_ip():
+    for ifaceName in interfaces():
+        addresses = [i['addr'] for i in ifaddresses(ifaceName).setdefault(AF_INET, [{'addr':'No IP addr'}] )]
+        if addresses[0] == 'No IP addr' or addresses[0][0:3]=='127':
+            continue
+        else:
+            return addresses[0]
+    return ""
+
+# Shamelessly stolen from https://stackoverflow.com/a/29854274
+def check_internet_access(ext_ip='8.8.8.8'):
+    conn = httplib.HTTPSConnection(ext_ip, timeout=1)
+    try:
+        conn.request('HEAD', '/')
+        return True
+    except Exception:
+        return False
