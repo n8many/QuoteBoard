@@ -158,8 +158,8 @@ def on_post(self, backend: QuoteServerBackend, config_file: str):
         'current_time': time.strftime('%d %b %Y %H:%M:%S'),
         'server_ip': get_server_ip(),
         'internet_access': "🟢" if check_internet_access() else "🔴",
-        'next_quote_change': time.strftime('%d %b %Y %H:%M:%S', time.gmtime(backend.last_quote_change + backend.config['database_query_period_m']*60)),
-        'last_database_update' : time.strftime('%d %b %Y %H:%M:%S', time.gmtime(backend.last_database_update))
+        'next_quote_change': time.strftime('%d %b %Y %H:%M:%S', time.localtime(backend.last_quote_change + backend.config['database_query_period_m']*60)),
+        'last_database_update' : time.strftime('%d %b %Y %H:%M:%S', time.localtime(backend.last_database_update))
     }
 
     # send response
@@ -210,8 +210,6 @@ def main(database_access_file: str, config_file: str):
 
     # start time 
     current_time_s = time.time()
-    last_db_query_s     = current_time_s
-    last_quote_change_s = current_time_s
 
     handler = partial(HTTPHandler, 
                     on_post=partial(lambda self: on_post(self, backend, config_file)), # bind additional arguments to our on_post callback
