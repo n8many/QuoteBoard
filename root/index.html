@@ -24,11 +24,19 @@
         <input class="border border-secondary rounded" id="uri" size="20" style="margin-bottom: 5px;" value="">
     </div>
     <div id="interval_counter"></div>  <!-- TODO REMOVE ME. -->
+    <div class="headerfooter" id="debug_header">
+        <span id="device_time" style="float:left"></span>
+        <span id="next_quote_time" style="float:right"></span>
+    </div>
     <div id="connection_loss_msg"></div>
     <div class="center">
           <q id="quote_body"></q>
     </div>
     <div id="quote_author"></div>
+    <div class="headerfooter" id="debug_footer">
+        <span id="last_database_update" style="float:left"></span>
+        <span id="device_ip" style="float:right"></span>
+    </div>
 
     <script>
         window.onload = function () {
@@ -40,18 +48,19 @@
             path = url.substring(url.indexOf('//') + 2, url.lastIndexOf('/') +
                 1); // https://path/with/slashes/FILE_NAME_NOT_INCLUDED.html
             uri.value = location.protocol + '//' + path;
-
+            uri.style.display = "none";
+            interval_counter.style.display = "none";
             hide_debugging_stuff()
         }
 
         function hide_debugging_stuff() {
-            uri.style.display = "none";
-            interval_counter.style.display = "none";
+            debug_header.style.display = "none";
+            debug_footer.style.display = "none";
         }
 
         function show_debugging_stuff() {
-            uri.style.display = "inline";
-            interval_counter.style.display = "inline";
+            debug_header.style.display = "inline";
+            debug_footer.style.display = "inline";
         }
 
         function handle_server_response(response) {
@@ -60,6 +69,11 @@
 
             // handle received info
             if ("config" in response) {
+                if ('debug' in response['config'] && response['config']['debug']){
+                    show_debugging_stuff()
+                } else {
+                    hide_debugging_stuff()
+                }
                 // console.log(response["config"])
                 if ('sfw' in response['config'] && response['config']['sfw'] ) {
                     quote_body.innerHTML = ""
@@ -67,6 +81,22 @@
                     return
                 }
             }
+
+            if ("debug_info" in response) {
+                if ('current_time' in response['debug_info']) {
+                    device_time.innerHTML = response['debug_info']['current_time']
+                }
+                if ('next_quote_change' in response['debug_info']) {
+                    next_quote_time.innerHTML = "Next quote at: " + response['debug_info']['next_quote_change']
+                }
+                if ('last_database_update' in response['debug_info']) {
+                    last_database_update.innerHTML = "Last updated: " + response['debug_info']['last_database_update']
+                }
+                if ('server_ip' in response['debug_info'] && 'internet_access' in response['debug_info']) {
+                    device_ip.innerHTML = response['debug_info']['server_ip'] + ' ' + response['debug_info']['internet_access']                    
+                }
+            }
+
             if ("current_quote_info" in response) {
                 current_quote_info = response["current_quote_info"]
                 if ("quote" in current_quote_info)
