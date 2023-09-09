@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from functools import partial
 import quote_updater as quote_db
 from server import HTTPHandler 
-from utils import merge_dict_into_dict, dict_keys_to_lowercase, get_server_ip, check_internet_access
+from utils import merge_dict_into_dict, dict_keys_to_lowercase, get_server_ip, check_internet_access, RepeatTimer
 from quote_picker import pick_quote, get_current_birthdays
 
 from typing import Optional
@@ -126,7 +126,7 @@ class QuoteServerBackend:
                 self.birthdays = fetch_and_save_database(self.database['quote_source'], self.database['birthday_sheet'], self.config['cache_birthday_file'], existing_db=self.birthdays, cleaning_func=quote_db.clean_birthdays)
         print("Databases updated")
     
-def on_post(self, backend: QuoteServerBackend, config_file: str):
+def on_post(self, backend: QuoteServerBackend, server_status: dict, config_file: str):
     # get the json sent to us
     content_len = int(self.headers.get('Content-Length'))
     post_body = self.rfile.read(content_len)
@@ -156,8 +156,8 @@ def on_post(self, backend: QuoteServerBackend, config_file: str):
 
     response_dict['debug_info'] = {
         'current_time': time.strftime('%d %b %Y %H:%M:%S'),
-        'server_ip': get_server_ip(),
-        'internet_access': "🟢" if check_internet_access() else "🔴",
+        'server_ip': server_status['server_ip'],
+        'internet_access': "🟢" if server_status['internet_status'] else "🔴",
         'next_quote_change': time.strftime('%d %b %Y %H:%M:%S', time.localtime(backend.last_quote_change + backend.config['database_query_period_m']*60)),
         'last_database_update' : time.strftime('%d %b %Y %H:%M:%S', time.localtime(backend.last_database_update))
     }
@@ -210,32 +210,47 @@ def main(database_access_file: str, config_file: str):
 
     # start time 
     current_time_s = time.time()
+    server_status = {
+        "server_ip": get_server_ip(),
+        "internet_status": check_internet_access(),
+    }
 
     handler = partial(HTTPHandler, 
-                    on_post=partial(lambda self: on_post(self, backend, config_file)), # bind additional arguments to our on_post callback
+                    on_post=partial(lambda self: on_post(self, backend, server_status, config_file)), # bind additional arguments to our on_post callback
                     root_dir='root', 
                     default_index="index.html")
     
 
     server = HTTPServer(('', config['port']), handler) # access with http://localhost:8080
 
+    def check_server_status():
+        nonlocal server_status
+
+        server_status["current_ip"] = get_server_ip()
+        server_status["internet_status"] = check_internet_access()
+
+    server_check = RepeatTimer(interval=10, function=check_server_status)
+    server_check.start()
+
     # server.serve_forever()
-    while True:
+    try:
+        while True:
+            # THIS IS BLOCKING
+            server.handle_request()
 
-        # THIS IS BLOCKING
-        server.handle_request()
+            current_time_s = time.time()
 
-        current_time_s = time.time()
+            # TODO: make these checks use thread timers to run
+            if backend.last_database_update + backend.config['database_query_period_m']*60 <= current_time_s:
+                print('updating database')
+                backend.update_databases()
 
-        # TODO: make these checks use thread timers to run
-        if backend.last_database_update + backend.config['database_query_period_m']*60 <= current_time_s:
-            print('updating database')
-            backend.update_databases()
-
-        if backend.last_quote_change + backend.config['quote_change_period_m']*60 <= current_time_s and not ('sfw' in backend.config and backend.config['sfw']):
-            backend.change_current_quote() # Fairly lossy in terms of time...
-            
-
+            if backend.last_quote_change + backend.config['quote_change_period_m']*60 <= current_time_s and not ('sfw' in backend.config and backend.config['sfw']):
+                backend.change_current_quote() # Fairly lossy in terms of time...
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server_check.cancel()
 
 if __name__ == "__main__":
     if not os.path.exists('config.json'):

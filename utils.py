@@ -1,7 +1,7 @@
 import json
 import http.client as httplib
 from netifaces import interfaces, ifaddresses, AF_INET
-
+from threading import Timer
 
 def dict_keys_to_lowercase(d):
     return {k.lower(): v for k, v in d.items()}
@@ -63,3 +63,8 @@ def check_internet_access(ext_ip='8.8.8.8'):
         return True
     except Exception:
         return False
+
+class RepeatTimer(Timer):
+    def run(self):
+        while not self.finished.wait(self.interval):
+            self.function(*self.args, **self.kwargs)
