@@ -158,7 +158,7 @@ def on_post(self, backend: QuoteServerBackend, server_status: dict, config_file:
         'current_time': time.strftime('%d %b %Y %H:%M:%S'),
         'server_ip': server_status['server_ip'],
         'internet_access': "🟢" if server_status['internet_status'] else "🔴",
-        'next_quote_change': time.strftime('%d %b %Y %H:%M:%S', time.localtime(backend.last_quote_change + backend.config['database_query_period_m']*60)),
+        'next_quote_change': time.strftime('%d %b %Y %H:%M:%S', time.localtime(backend.last_quote_change + backend.config['quote_change_period_m']*60)),
         'last_database_update' : time.strftime('%d %b %Y %H:%M:%S', time.localtime(backend.last_database_update))
     }
 
