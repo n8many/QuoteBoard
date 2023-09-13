@@ -226,7 +226,7 @@ def main(database_access_file: str, config_file: str):
     def check_server_status():
         nonlocal server_status
 
-        server_status["current_ip"] = get_server_ip()
+        server_status["server_ip"] = get_server_ip()
         server_status["internet_status"] = check_internet_access()
 
     server_check = RepeatTimer(interval=10, function=check_server_status)
