@@ -32,7 +32,12 @@
     <div class="center">
           <q id="quote_body"></q>
     </div>
-    <div id="quote_author"></div>
+    <div style="float:right">
+        <span id="quote_author"></span>
+        <span id="quote_date"></span>
+        <span id="quote_context"></span>
+    </div>
+    
     <div class="headerfooter" id="debug_footer">
         <span id="last_database_update" style="float:left"></span>
         <span id="device_ip" style="float:right"></span>
@@ -69,11 +74,21 @@
 
             // handle received info
             if ("config" in response) {
-                if ('debug' in response['config'] && response['config']['debug']){
+                if ('debug' in response['config'] && response['config']['debug'])
                     show_debugging_stuff()
-                } else {
+                else
                     hide_debugging_stuff()
-                }
+
+                if ('display_date' in response['config'] && response['config']['display_date'])
+                    quote_date.style.display = "inline"
+                else 
+                    quote_date.style.display = "none"
+
+                if ('display_context' in response['config'] && response['config']['display_context'])
+                    quote_context.style.display = "inline"
+                else 
+                    quote_context.style.display = "none"
+
                 // console.log(response["config"])
                 if ('sfw' in response['config'] && response['config']['sfw'] ) {
                     quote_body.innerHTML = ""
@@ -107,6 +122,19 @@
                     quote_author.innerHTML = current_quote_info["who"]
                 else
                     quote_author.innerHTML = "unknown"
+
+                if ("date" in current_quote_info && current_quote_info["date"]!="")
+                    quote_date.innerHTML = " " + current_quote_info["date"]
+                else
+                    quote_date.innerHTML = ""
+                
+                if ("context" in current_quote_info && current_quote_info["context"]!="")
+                    if (quote_date.innerHTML=="" || quote_date.style.display=="none")
+                        quote_context.innerHTML = " " + current_quote_info["context"]
+                    else
+                        quote_context.innerHTML = ", " + current_quote_info["context"]
+                else
+                    quote_context.innerHTML = ""
             }
         }
 
