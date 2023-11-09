@@ -34,8 +34,8 @@
     </div>
     <div style="float:right">
         <span id="quote_author"></span>
-        <span id="quote_date"></span>
         <span id="quote_context"></span>
+        <span id="quote_date"></span>
     </div>
     
     <div class="headerfooter" id="debug_footer">
@@ -123,18 +123,15 @@
                 else
                     quote_author.innerHTML = "unknown"
 
-                if ("date" in current_quote_info && current_quote_info["date"]!="")
-                    quote_date.innerHTML = " " + current_quote_info["date"]
-                else
-                    quote_date.innerHTML = ""
-                
                 if ("context" in current_quote_info && current_quote_info["context"]!="")
-                    if (quote_date.innerHTML=="" || quote_date.style.display=="none")
-                        quote_context.innerHTML = " " + current_quote_info["context"]
-                    else
-                        quote_context.innerHTML = ", " + current_quote_info["context"]
+                    quote_context.innerHTML = " " + current_quote_info["context"]
                 else
                     quote_context.innerHTML = ""
+
+                if ("date" in current_quote_info && current_quote_info["date"]!="")
+                    quote_date.innerHTML = " " + current_quote_info["date"]
+                 else
+                    quote_date.innerHTML = ""
             }
         }
 
