@@ -4,6 +4,12 @@ import pandas as pd
 
 from typing import Optional
 
+def coerce_dates(x):
+        try:
+            return date.fromisoformat(x)
+        except ValueError:
+            return None
+
 def date_is_today(x):
         today = date.today()
         try:
@@ -31,11 +37,6 @@ def filter_quotes_by_name(quotes, names):
 
 
 def filter_quotes_by_date(quotes, target_date):
-    def coerce_dates(x):
-        try:
-            return date.fromisoformat(x)
-        except ValueError:
-            return None
     
     date_quotes = quotes.loc[~quotes['Date'].apply(coerce_dates).isna()].copy()
     

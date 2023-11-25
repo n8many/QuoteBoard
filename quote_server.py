@@ -8,7 +8,7 @@ from functools import partial
 import quote_updater as quote_db
 from server import HTTPHandler 
 from utils import merge_dict_into_dict, dict_keys_to_lowercase, get_server_ip, check_internet_access, RepeatTimer
-from quote_picker import pick_quote, get_current_birthdays
+from quote_picker import pick_quote, get_current_birthdays, coerce_dates
 
 from typing import Optional
 
@@ -85,6 +85,8 @@ class QuoteServerBackend:
             if self.config['display_birthdays'] and (get_current_birthdays(self.birthdays)['Name']==chosen_quote['Who']).any():
                 chosen_quote['Who'] = chosen_quote['Who'] + ' 🎂'
 
+            if self.config['display_date'] and (d:=coerce_dates(chosen_quote['Date'])) is not None:
+                chosen_quote['Date'] = f"({d:%B} {d.day}, {d:%Y})"
         else:
             # Seems the quotes have changed indices, time to get a new one
             self.change_current_quote()
