@@ -20,11 +20,8 @@ def merge_dict_into_dict(dst, src, save_file=None):
                 convert_value = type(old_value)(new_value)
 
                 # handle Booleans specially
-                if type(old_value) == type(True):
-                    if src[key].isnumeric():
-                        convert_value = bool(int(new_value))
-                    else:
-                        convert_value = ('TRUE' == new_value.upper()) or ('T' == new_value.upper())
+                if type(old_value) == bool and type(new_value) == str:
+                    convert_value = ('TRUE' == new_value.upper()) or ('T' == new_value.upper())
 
                 # Don't write again if they are the same
                 if old_value == convert_value:
