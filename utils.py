@@ -21,7 +21,13 @@ def merge_dict_into_dict(dst, src, save_file=None):
 
                 # handle Booleans specially
                 if type(old_value) == bool and type(new_value) == str:
-                    convert_value = ('TRUE' == new_value.upper()) or ('T' == new_value.upper())
+                    if new_value.isnumeric():
+                        convert_value = bool(int(new_value))
+                    else:
+                        if v:=new_value.upper() in ['TRUE', 'T', 'FALSE', 'F']:
+                            convert_value = ('TRUE' == v) or ('T' == v)
+                        else:
+                            raise ValueError(f"Invalid input for bool {new_value}")
 
                 # Don't write again if they are the same
                 if old_value == convert_value:
