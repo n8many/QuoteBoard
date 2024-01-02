@@ -24,7 +24,7 @@ def merge_dict_into_dict(dst, src, save_file=None):
                     if new_value.isnumeric():
                         convert_value = bool(int(new_value))
                     else:
-                        if v:=new_value.upper() in ['TRUE', 'T', 'FALSE', 'F']:
+                        if (v:=new_value.upper()) in ['TRUE', 'T', 'FALSE', 'F']:
                             convert_value = ('TRUE' == v) or ('T' == v)
                         else:
                             raise ValueError(f"Invalid input for bool {new_value}")
